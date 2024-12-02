@@ -1,0 +1,10 @@
+# project_zomboid_config.toml
+server_path = "$env:USERPROFILE/scoop/apps/steamcmd/current/steamapps/common/Project Zomboid Dedicated Server"
+
+server_config_path = "$env:USERPROFILE/Zomboid/Server"
+
+server_save_path = "$env:USERPROFILE/Zomboid/Saves/Multiplayer"
+
+server_name = "servertest"
+
+restart_server_script_path = "./config/project_zomboid/restart_script.ps1"

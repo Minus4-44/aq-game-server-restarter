@@ -1,0 +1,75 @@
+# -*- coding:utf-8 -*
+"""
+Description:
+
+Author:
+    Fu YuHao(fuyuhao01@corp.netease.com)
+History:
+    2024/11/30, create file.
+"""
+import subprocess
+from pathlib import Path
+
+from classy_config import register_config
+from fastapi import FastAPI
+from starlette.responses import FileResponse
+
+from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
+
+app = FastAPI()
+register_config(filepath="./config/common_config.toml", prefix="project_zomboid")
+
+@app.get("/")
+async def read_root():
+    return {"Hello": "World1"}
+
+
+@app.post("/project_zomboid/restart")
+async def restart_project_zomboid_server(force_delete_saves: bool = False):
+    """
+    Restart project zomboid server
+    :param force_delete_saves: whether to force delete saves
+    :return: status
+    """
+    project_zomboid_config = ProjectZomboidConfig()
+    if Path(project_zomboid_config.restart_server_script_path).is_file():
+        paths_args = f"-ZomboidSavePath {project_zomboid_config.game_server_save_path} -SteamCmdPath {project_zomboid_config.steamcmd_path} -ServerStartPath {project_zomboid_config.game_server_path}"
+        if force_delete_saves:
+            subprocess.run(
+                [
+                    "pwsh.exe",
+                    "-File",
+                    project_zomboid_config.restart_server_script_path,
+                    "-ForceDeleteSaves " + paths_args,
+                ],
+                check=True,
+            )
+        else:
+            subprocess.run(
+                [
+                    "pwsh.exe",
+                    "-File",
+                    project_zomboid_config.restart_server_script_path,
+                    paths_args,
+                ],
+                check=True,
+            )
+        return {"status": "success"}
+
+
+@app.get("/project_zomboid/get_server_config")
+async def get_server_config(server_name: str=""):
+    project_zomboid_config = ProjectZomboidConfig()
+    if Path(project_zomboid_config.get_server_ini_config_path()).is_file():
+        return FileResponse(project_zomboid_config.get_server_ini_config_path(), media_type="text/plain")
+    else:
+        return {"status": "fail", "message": "server config file not found"}
+
+
+@app.get("/project_zomboid/get_sandbox_config")
+async def get_sandbox_config(server_name: str=""):
+    project_zomboid_config = ProjectZomboidConfig()
+    if Path(project_zomboid_config.get_server_sandbox_vars_lua_path()).is_file():
+        return FileResponse(project_zomboid_config.get_server_sandbox_vars_lua_path(), media_type="text/plain")
+    else:
+        return {"status": "fail", "message": "sandbox config file not found"}
