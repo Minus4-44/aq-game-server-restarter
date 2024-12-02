@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 
 from classy_config import register_config
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile
 from starlette.responses import FileResponse
 
 from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
@@ -21,7 +21,7 @@ register_config(filepath="./config/common_config.toml", prefix="project_zomboid"
 
 @app.get("/")
 async def read_root():
-    return {"Hello": "World1"}
+    return {"Hello": "World"}
 
 
 @app.post("/project_zomboid/restart")
@@ -66,6 +66,16 @@ async def get_server_config(server_name: str=""):
         return {"status": "fail", "message": "server config file not found"}
 
 
+@app.post("/project_zomboid/override_server_config")
+async def override_server_config(config: UploadFile, server_name: str=""):
+    project_zomboid_config = ProjectZomboidConfig()
+    if not Path(project_zomboid_config.get_server_ini_config_path()).parent.exists():
+        Path(project_zomboid_config.get_server_ini_config_path()).parent.mkdir(parents=True, exist_ok=True)
+    with open(project_zomboid_config.get_server_ini_config_path(), "wb") as f:
+        f.write(await config.read())
+    return {"status": "success"}
+
+
 @app.get("/project_zomboid/get_sandbox_config")
 async def get_sandbox_config(server_name: str=""):
     project_zomboid_config = ProjectZomboidConfig()
@@ -73,3 +83,13 @@ async def get_sandbox_config(server_name: str=""):
         return FileResponse(project_zomboid_config.get_server_sandbox_vars_lua_path(), media_type="text/plain")
     else:
         return {"status": "fail", "message": "sandbox config file not found"}
+
+
+@app.post("/project_zomboid/override_sandbox_config")
+async def override_sandbox_config(config: UploadFile, server_name: str=""):
+    project_zomboid_config = ProjectZomboidConfig()
+    if not Path(project_zomboid_config.get_server_sandbox_vars_lua_path()).parent.exists():
+        Path(project_zomboid_config.get_server_sandbox_vars_lua_path()).parent.mkdir(parents=True, exist_ok=True)
+    with open(project_zomboid_config.get_server_sandbox_vars_lua_path(), "wb") as f:
+        f.write(await config.read())
+    return {"status": "success"}
