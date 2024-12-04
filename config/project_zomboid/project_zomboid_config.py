@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*
 """
 Description:
-
+    Project Zomboid Config
 Author:
-    Fu YuHao(fuyuhao01@corp.netease.com)
+    Fumeze(dev.fumeze@outlook.com)
 History:
     2024/12/2, create file.
 """

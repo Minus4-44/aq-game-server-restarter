@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*
 """
 Description:
-
+    Base Game Server Config
 Author:
-    Fu YuHao(fuyuhao01@corp.netease.com)
+    Fumeze(dev.fumeze@outlook.com)
 History:
     2024/12/2, create file.
 """

@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*
 """
 Description:
-
+    Our game server management web api
 Author:
-    Fu YuHao(fuyuhao01@corp.netease.com)
+    Fumeze(dev.fumeze@outlook.com)
 History:
     2024/11/30, create file.
 """
