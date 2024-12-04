@@ -7,6 +7,22 @@ Author:
 History:
     2024/12/2, create file.
 """
+import os
+import re
+
+
+def expand_env_variables(path: str):
+    """
+    Expand environment variables in the given path.
+
+    :param path: The path to expand.
+    :return: The expanded path.
+    """
+    pattern = re.compile(r"\$env:([A-Za-z_][A-Za-z0-9_]*)")
+    expanded_path = pattern.sub(
+        lambda match: os.environ.get(match.group(1), match.group(0)), path
+    )
+    return expanded_path
 
 
 class GameServerConfig:
