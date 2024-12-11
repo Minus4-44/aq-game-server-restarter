@@ -18,7 +18,7 @@ from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
 from config.satisfactory.satisfactory_config import SatisfactoryConfig
 
 app = FastAPI()
-register_config(filepath="./config/common_config.toml", prefix="project_zomboid")
+register_config(filepath="./config/common_config.toml", prefix="common")
 
 
 @app.get("/")
@@ -26,7 +26,7 @@ async def read_root():
     return {"Hello": "World"}
 
 
-@app.post("/project_zomboid/restart")
+@app.post("/project_zomboid/restart", tags=["project_zomboid"])
 async def restart_project_zomboid_server(force_delete_saves: bool = False):
     """
     Restart project zomboid server
@@ -59,7 +59,7 @@ async def restart_project_zomboid_server(force_delete_saves: bool = False):
         return {"status": "success"}
 
 
-@app.get("/project_zomboid/get_server_config")
+@app.get("/project_zomboid/get_server_config", tags=["project_zomboid"])
 async def get_server_config(server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
     if Path(project_zomboid_config.get_server_ini_config_path()).is_file():
@@ -70,7 +70,7 @@ async def get_server_config(server_name: str = ""):
         return {"status": "fail", "message": "server config file not found"}
 
 
-@app.post("/project_zomboid/override_server_config")
+@app.post("/project_zomboid/override_server_config", tags=["project_zomboid"])
 async def override_server_config(config: UploadFile, server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
     if not Path(project_zomboid_config.get_server_ini_config_path()).parent.exists():
@@ -82,7 +82,7 @@ async def override_server_config(config: UploadFile, server_name: str = ""):
     return {"status": "success"}
 
 
-@app.get("/project_zomboid/get_sandbox_config")
+@app.get("/project_zomboid/get_sandbox_config", tags=["project_zomboid"])
 async def get_sandbox_config(server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
     if Path(project_zomboid_config.get_server_sandbox_vars_lua_path()).is_file():
@@ -94,7 +94,7 @@ async def get_sandbox_config(server_name: str = ""):
         return {"status": "fail", "message": "sandbox config file not found"}
 
 
-@app.post("/project_zomboid/override_sandbox_config")
+@app.post("/project_zomboid/override_sandbox_config", tags=["project_zomboid"])
 async def override_sandbox_config(config: UploadFile, server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
     if not Path(
@@ -108,7 +108,7 @@ async def override_sandbox_config(config: UploadFile, server_name: str = ""):
     return {"status": "success"}
 
 
-@app.post("/satisfactory/restart")
+@app.post("/satisfactory/restart", tags=["satisfactory"])
 async def restart_satisfactory_server():
     """
     Restart satisfactory server
@@ -116,7 +116,10 @@ async def restart_satisfactory_server():
     """
     satisfactory_config = SatisfactoryConfig()
     if Path(satisfactory_config.restart_server_script_path).is_file():
-        subprocess.run(["pwsh.exe", "-File", satisfactory_config.restart_server_script_path], check=True)
+        subprocess.run(
+            ["pwsh.exe", "-File", satisfactory_config.restart_server_script_path],
+            check=True,
+        )
         return {"status": "success"}
     else:
         return {"status": "fail", "message": "restart script not found"}
