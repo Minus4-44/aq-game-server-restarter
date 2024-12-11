@@ -1,0 +1,4 @@
+# satisfactory_config.toml
+server_path = "$env:USERPROFILE/scoop/apps/steamcmd/current/steamapps/common/SatisfactoryDedicatedServer"
+
+restart_server_script_path = "./config/satisfactory/restart_script.ps1"

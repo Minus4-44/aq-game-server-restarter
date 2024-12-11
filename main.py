@@ -15,6 +15,7 @@ from fastapi import FastAPI, UploadFile
 from starlette.responses import FileResponse
 
 from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
+from config.satisfactory.satisfactory_config import SatisfactoryConfig
 
 app = FastAPI()
 register_config(filepath="./config/common_config.toml", prefix="project_zomboid")
@@ -105,3 +106,17 @@ async def override_sandbox_config(config: UploadFile, server_name: str = ""):
     with open(project_zomboid_config.get_server_sandbox_vars_lua_path(), "wb") as f:
         f.write(await config.read())
     return {"status": "success"}
+
+
+@app.post("/satisfactory/restart")
+async def restart_satisfactory_server():
+    """
+    Restart satisfactory server
+    :return: status
+    """
+    satisfactory_config = SatisfactoryConfig()
+    if Path(satisfactory_config.restart_server_script_path).is_file():
+        subprocess.run(["pwsh.exe", "-File", satisfactory_config.restart_server_script_path], check=True)
+        return {"status": "success"}
+    else:
+        return {"status": "fail", "message": "restart script not found"}
