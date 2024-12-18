@@ -1,11 +1,11 @@
-# -*- coding:utf-8 -*
+# -*- coding:utf-8 -*-
 """
 Description:
-
+    Satisfactory Server Configuration
 Author:
     Fumeze(dev.fumeze@outlook.com)
 History:
-    2024/12/10, create file.
+    2024/12/10, created file.
 """
 from classy_config import register_config, ConfigValue
 
@@ -19,6 +19,10 @@ register_config(
 
 class SatisfactoryConfig(SteamGameServerConfig):
     def __init__(self):
+        """
+        Satisfactory Server Configuration
+        Initializes configuration for Satisfactory server
+        """
         game_name = "satisfactory"
         game_server_path = expand_env_variables(
             ConfigValue("satisfactory.server_path", str)

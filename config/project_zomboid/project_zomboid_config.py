@@ -1,11 +1,11 @@
-# -*- coding:utf-8 -*
+# -*- coding:utf-8 -*-
 """
 Description:
-    Project Zomboid Config
+    Project Zomboid Server Configuration
 Author:
     Fumeze(dev.fumeze@outlook.com)
 History:
-    2024/12/2, create file.
+    2024/12/2, created file.
 """
 from pathlib import Path
 
@@ -21,6 +21,10 @@ register_config(
 
 class ProjectZomboidConfig(SteamGameServerConfig):
     def __init__(self):
+        """
+        Project Zomboid Server Configuration
+        Initializes configuration for Project Zomboid server
+        """
         game_name = "project_zomboid"
         game_server_path = expand_env_variables(
             ConfigValue("project_zomboid.server_path", str)
@@ -38,9 +42,17 @@ class ProjectZomboidConfig(SteamGameServerConfig):
         )
 
     def get_server_ini_config_path(self):
+        """
+        Get the path to the server's INI configuration file
+        :return: Path to the server's INI configuration file
+        """
         return Path(self.game_server_config_path, f"{self.server_name}.ini").as_posix()
 
     def get_server_sandbox_vars_lua_path(self):
+        """
+        Get the path to the server's sandbox variables LUA file
+        :return: Path to the server's sandbox variables LUA file
+        """
         return Path(
             self.game_server_config_path, f"{self.server_name}_SandboxVars.lua"
         ).as_posix()
