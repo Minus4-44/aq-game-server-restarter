@@ -10,6 +10,9 @@ History:
 import os
 import re
 
+from classy_config import register_config, ConfigValue
+
+register_config(filepath="./config/common_config.toml", prefix="common")
 
 def expand_env_variables(path: str):
     """
@@ -35,3 +38,16 @@ class GameServerConfig:
         super().__init__()
         self.game_name = game_name
         self.game_server_path = game_server_path
+
+
+class SteamGameServerConfig(GameServerConfig):
+    def __init__(self, game_name: str, game_server_path: str):
+        """
+        Steam Game Server Config
+        :param game_name: The name of the game
+        :param game_server_path: The path of the game server
+        """
+        super().__init__(game_name, game_server_path)
+        self.steamcmd_path = expand_env_variables(
+            ConfigValue("common.steamcmd_path", str)
+        )

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from classy_config import register_config, ConfigValue
 
-from config.base_config import GameServerConfig, expand_env_variables
+from config.base_config import SteamGameServerConfig, expand_env_variables
 
 register_config(
     filepath="./config/project_zomboid/project_zomboid_config.toml",
@@ -19,7 +19,7 @@ register_config(
 )
 
 
-class ProjectZomboidConfig(GameServerConfig):
+class ProjectZomboidConfig(SteamGameServerConfig):
     def __init__(self):
         game_name = "project_zomboid"
         game_server_path = expand_env_variables(
@@ -35,9 +35,6 @@ class ProjectZomboidConfig(GameServerConfig):
         self.server_name = ConfigValue("project_zomboid.server_name", str)
         self.restart_server_script_path = expand_env_variables(
             ConfigValue("project_zomboid.restart_server_script_path", str)
-        )
-        self.steamcmd_path = expand_env_variables(
-            ConfigValue("project_zomboid.steamcmd_path", str)
         )
 
     def get_server_ini_config_path(self):

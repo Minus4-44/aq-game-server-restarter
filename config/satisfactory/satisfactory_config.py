@@ -9,7 +9,7 @@ History:
 """
 from classy_config import register_config, ConfigValue
 
-from config.base_config import GameServerConfig, expand_env_variables
+from config.base_config import SteamGameServerConfig, expand_env_variables
 
 register_config(
     filepath="./config/satisfactory/satisfactory_config.toml",
@@ -17,7 +17,7 @@ register_config(
 )
 
 
-class SatisfactoryConfig(GameServerConfig):
+class SatisfactoryConfig(SteamGameServerConfig):
     def __init__(self):
         game_name = "satisfactory"
         game_server_path = expand_env_variables(
