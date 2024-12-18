@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏服务器管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">游戏服务器管理系统</h1>
+        
+        <!-- 游戏选择器 -->
+        <div class="mb-8">
+            <div class="flex justify-center space-x-4">
+                <button onclick="switchGame('project_zomboid')" class="game-selector-btn active" data-game="project_zomboid">
+                    <i class="fas fa-skull-crossbones mr-2"></i>Project Zomboid
+                </button>
+                <button onclick="switchGame('satisfactory')" class="game-selector-btn" data-game="satisfactory">
+                    <i class="fas fa-industry mr-2"></i>Satisfactory
+                </button>
+                <button onclick="switchGame('palworld')" class="game-selector-btn" data-game="palworld">
+                    <i class="fas fa-dragon mr-2"></i>PalWorld
+                </button>
+            </div>
+        </div>
+
+        <!-- 服务器管理面板 -->
+        <div id="server-panels">
+            <!-- Project Zomboid 面板 -->
+            <div class="game-panel active" id="project_zomboid-panel">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-skull-crossbones text-2xl text-gray-700 mr-3"></i>
+                        <h2 class="text-xl font-semibold">Project Zomboid 服务器</h2>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex space-x-4">
+                            <button onclick="restartServer('project_zomboid')" class="btn-primary">
+                                <i class="fas fa-sync-alt mr-2"></i>重启服务器
+                            </button>
+                            <button onclick="restartServer('project_zomboid', true)" class="btn-danger">
+                                <i class="fas fa-trash-alt mr-2"></i>强制重启并删除存档
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="config-section">
+                                <h3 class="text-lg font-medium mb-3">服务器配置</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="getConfig('project_zomboid', 'server')" class="btn-secondary">
+                                        <i class="fas fa-download mr-2"></i>获取配置
+                                    </button>
+                                    <div class="relative">
+                                        <input type="file" id="zomboid-server-config" class="hidden" 
+                                               onchange="uploadConfig('project_zomboid', 'server', this.files[0])">
+                                        <button onclick="document.getElementById('zomboid-server-config').click()" 
+                                                class="btn-secondary">
+                                            <i class="fas fa-upload mr-2"></i>上传配置
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="config-section">
+                                <h3 class="text-lg font-medium mb-3">沙盒配置</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="getConfig('project_zomboid', 'sandbox')" class="btn-secondary">
+                                        <i class="fas fa-download mr-2"></i>获取配置
+                                    </button>
+                                    <div class="relative">
+                                        <input type="file" id="zomboid-sandbox-config" class="hidden" 
+                                               onchange="uploadConfig('project_zomboid', 'sandbox', this.files[0])">
+                                        <button onclick="document.getElementById('zomboid-sandbox-config').click()" 
+                                                class="btn-secondary">
+                                            <i class="fas fa-upload mr-2"></i>上传配置
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Satisfactory 面板 -->
+            <div class="game-panel hidden" id="satisfactory-panel">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-industry text-2xl text-gray-700 mr-3"></i>
+                        <h2 class="text-xl font-semibold">Satisfactory 服务器</h2>
+                    </div>
+                    <div class="space-y-6">
+                        <button onclick="restartServer('satisfactory')" class="btn-primary">
+                            <i class="fas fa-sync-alt mr-2"></i>重启服务器
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PalWorld 面板 (预留) -->
+            <div class="game-panel hidden" id="palworld-panel">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-dragon text-2xl text-gray-700 mr-3"></i>
+                        <h2 class="text-xl font-semibold">PalWorld 服务器</h2>
+                    </div>
+                    <div class="flex items-center justify-center h-32">
+                        <p class="text-gray-500">即将支持...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div id="toast" class="fixed bottom-4 right-4 hidden">
+        <div class="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg">
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="/static/main.js"></script>
+</body>
+</html>
