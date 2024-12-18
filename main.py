@@ -13,7 +13,7 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.responses import FileResponse
+from fastapi.responses import JSONResponse, FileResponse
 
 from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
 from config.satisfactory.satisfactory_config import SatisfactoryConfig
@@ -66,50 +66,83 @@ async def restart_project_zomboid_server(force_delete_saves: bool = False):
 @app.get("/project_zomboid/get_server_config", tags=["project_zomboid"])
 async def get_server_config(server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
-    if Path(project_zomboid_config.get_server_ini_config_path()).is_file():
-        return FileResponse(
-            project_zomboid_config.get_server_ini_config_path(), media_type="text/plain"
-        )
+    config_path = project_zomboid_config.get_server_ini_config_path()
+    if Path(config_path).is_file():
+        try:
+            # 首先尝试UTF-8
+            with open(config_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            # 如果失败，尝试GBK
+            with open(config_path, 'r', encoding='gbk') as f:
+                content = f.read()
+        return JSONResponse({"content": content})
     else:
-        return {"status": "fail", "message": "server config file not found"}
-
-
-@app.post("/project_zomboid/override_server_config", tags=["project_zomboid"])
-async def override_server_config(config: UploadFile, server_name: str = ""):
-    project_zomboid_config = ProjectZomboidConfig()
-    if not Path(project_zomboid_config.get_server_ini_config_path()).parent.exists():
-        Path(project_zomboid_config.get_server_ini_config_path()).parent.mkdir(
-            parents=True, exist_ok=True
-        )
-    with open(project_zomboid_config.get_server_ini_config_path(), "wb") as f:
-        f.write(await config.read())
-    return {"status": "success"}
+        return JSONResponse({"status": "fail", "message": "server config file not found"})
 
 
 @app.get("/project_zomboid/get_sandbox_config", tags=["project_zomboid"])
 async def get_sandbox_config(server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
-    if Path(project_zomboid_config.get_server_sandbox_vars_lua_path()).is_file():
-        return FileResponse(
-            project_zomboid_config.get_server_sandbox_vars_lua_path(),
-            media_type="text/plain",
-        )
+    config_path = project_zomboid_config.get_server_sandbox_vars_lua_path()
+    if Path(config_path).is_file():
+        try:
+            # 首先尝试UTF-8
+            with open(config_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            # 如果失败，尝试GBK
+            with open(config_path, 'r', encoding='gbk') as f:
+                content = f.read()
+        return JSONResponse({"content": content})
     else:
-        return {"status": "fail", "message": "sandbox config file not found"}
+        return JSONResponse({"status": "fail", "message": "sandbox config file not found"})
+
+
+@app.post("/project_zomboid/override_server_config", tags=["project_zomboid"])
+async def override_server_config(content: dict, server_name: str = ""):
+    project_zomboid_config = ProjectZomboidConfig()
+    config_path = project_zomboid_config.get_server_ini_config_path()
+    if not Path(config_path).parent.exists():
+        Path(config_path).parent.mkdir(parents=True, exist_ok=True)
+    try:
+        # 使用与原文件相同的编码保存
+        try:
+            # 首先尝试读取原文件的编码
+            with open(config_path, 'r', encoding='utf-8') as f:
+                f.read()
+            encoding = 'utf-8'
+        except UnicodeDecodeError:
+            encoding = 'gbk'
+        
+        with open(config_path, "w", encoding=encoding) as f:
+            f.write(content["content"])
+        return JSONResponse({"status": "success"})
+    except Exception as e:
+        return JSONResponse({"status": "fail", "message": str(e)})
 
 
 @app.post("/project_zomboid/override_sandbox_config", tags=["project_zomboid"])
-async def override_sandbox_config(config: UploadFile, server_name: str = ""):
+async def override_sandbox_config(content: dict, server_name: str = ""):
     project_zomboid_config = ProjectZomboidConfig()
-    if not Path(
-        project_zomboid_config.get_server_sandbox_vars_lua_path()
-    ).parent.exists():
-        Path(project_zomboid_config.get_server_sandbox_vars_lua_path()).parent.mkdir(
-            parents=True, exist_ok=True
-        )
-    with open(project_zomboid_config.get_server_sandbox_vars_lua_path(), "wb") as f:
-        f.write(await config.read())
-    return {"status": "success"}
+    config_path = project_zomboid_config.get_server_sandbox_vars_lua_path()
+    if not Path(config_path).parent.exists():
+        Path(config_path).parent.mkdir(parents=True, exist_ok=True)
+    try:
+        # 使用与原文件相同的编码保存
+        try:
+            # 首先尝试读取原文件的编码
+            with open(config_path, 'r', encoding='utf-8') as f:
+                f.read()
+            encoding = 'utf-8'
+        except UnicodeDecodeError:
+            encoding = 'gbk'
+        
+        with open(config_path, "w", encoding=encoding) as f:
+            f.write(content["content"])
+        return JSONResponse({"status": "success"})
+    except Exception as e:
+        return JSONResponse({"status": "fail", "message": str(e)})
 
 
 @app.post("/satisfactory/restart", tags=["satisfactory"])

@@ -6,6 +6,8 @@
     <title>游戏服务器管理系统</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -47,37 +49,39 @@
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 服务器配置编辑器 -->
                             <div class="config-section">
-                                <h3 class="text-lg font-medium mb-3">服务器配置</h3>
-                                <div class="flex space-x-2">
-                                    <button onclick="getConfig('project_zomboid', 'server')" class="btn-secondary">
-                                        <i class="fas fa-download mr-2"></i>获取配置
-                                    </button>
-                                    <div class="relative">
-                                        <input type="file" id="zomboid-server-config" class="hidden" 
-                                               onchange="uploadConfig('project_zomboid', 'server', this.files[0])">
-                                        <button onclick="document.getElementById('zomboid-server-config').click()" 
-                                                class="btn-secondary">
-                                            <i class="fas fa-upload mr-2"></i>上传配置
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-lg font-medium">服务器配置</h3>
+                                    <div class="flex space-x-2">
+                                        <button onclick="loadConfig('project_zomboid', 'server')" class="btn-icon" title="刷新">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        <button onclick="saveConfig('project_zomboid', 'server')" class="btn-icon" title="保存">
+                                            <i class="fas fa-save"></i>
                                         </button>
                                     </div>
                                 </div>
+                                <div class="editor-container">
+                                    <textarea id="server-config-editor"></textarea>
+                                </div>
                             </div>
                             
+                            <!-- 沙盒配置编辑器 -->
                             <div class="config-section">
-                                <h3 class="text-lg font-medium mb-3">沙盒配置</h3>
-                                <div class="flex space-x-2">
-                                    <button onclick="getConfig('project_zomboid', 'sandbox')" class="btn-secondary">
-                                        <i class="fas fa-download mr-2"></i>获取配置
-                                    </button>
-                                    <div class="relative">
-                                        <input type="file" id="zomboid-sandbox-config" class="hidden" 
-                                               onchange="uploadConfig('project_zomboid', 'sandbox', this.files[0])">
-                                        <button onclick="document.getElementById('zomboid-sandbox-config').click()" 
-                                                class="btn-secondary">
-                                            <i class="fas fa-upload mr-2"></i>上传配置
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-lg font-medium">沙盒配置</h3>
+                                    <div class="flex space-x-2">
+                                        <button onclick="loadConfig('project_zomboid', 'sandbox')" class="btn-icon" title="刷新">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        <button onclick="saveConfig('project_zomboid', 'sandbox')" class="btn-icon" title="保存">
+                                            <i class="fas fa-save"></i>
                                         </button>
                                     </div>
+                                </div>
+                                <div class="editor-container">
+                                    <textarea id="sandbox-config-editor"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -122,6 +126,10 @@
         </div>
     </div>
 
+    <!-- CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/properties/properties.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/lua/lua.min.js"></script>
     <script src="/static/main.js"></script>
 </body>
 </html>
