@@ -1,49 +1,105 @@
-// 初始化编辑器
-let serverConfigEditor = CodeMirror.fromTextArea(document.getElementById('server-config-editor'), {
-    mode: 'properties',
-    theme: 'monokai',
-    lineNumbers: true,
-    autoCloseBrackets: true,
-    matchBrackets: true,
-    indentUnit: 4,
-    lineWrapping: true,
+// Global variables
+let currentGame = 'project_zomboid';
+let currentController = null;
+let serverConfigEditor = null;
+let sandboxConfigEditor = null;
+
+// Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize editors
+    serverConfigEditor = CodeMirror.fromTextArea(document.getElementById('server-config-editor'), {
+        mode: 'properties',
+        theme: 'monokai',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true,
+    });
+
+    sandboxConfigEditor = CodeMirror.fromTextArea(document.getElementById('sandbox-config-editor'), {
+        mode: 'lua',
+        theme: 'monokai',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true,
+    });
+
+    // Set initial game
+    setCurrentGame(window.location.pathname.substring(1) || 'project_zomboid');
+
+    // Add navigation event listeners
+    document.querySelectorAll('nav a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const game = link.getAttribute('data-game');
+            setCurrentGame(game);
+            window.history.pushState({game}, '', `/${game}`);
+        });
+    });
 });
 
-let sandboxConfigEditor = CodeMirror.fromTextArea(document.getElementById('sandbox-config-editor'), {
-    mode: 'lua',
-    theme: 'monokai',
-    lineNumbers: true,
-    autoCloseBrackets: true,
-    matchBrackets: true,
-    indentUnit: 4,
-    lineWrapping: true,
-});
-
-// 游戏切换功能
-function switchGame(gameName) {
-    // 更新选择器按钮状态
-    document.querySelectorAll('.game-selector-btn').forEach(btn => {
-        btn.classList.remove('active');
+// Set current game
+function setCurrentGame(game) {
+    currentGame = game;
+    
+    // Update navigation state
+    document.querySelectorAll('nav a').forEach(link => {
+        link.classList.remove('bg-gray-700');
+        if (link.getAttribute('data-game') === game) {
+            link.classList.add('bg-gray-700');
+        }
     });
-    document.querySelector(`[data-game="${gameName}"]`).classList.add('active');
 
-    // 更新面板显示
-    document.querySelectorAll('.game-panel').forEach(panel => {
-        panel.classList.remove('active');
-        panel.classList.add('hidden');
-    });
-    const targetPanel = document.getElementById(`${gameName}-panel`);
-    targetPanel.classList.remove('hidden');
-    targetPanel.classList.add('active');
+    // Update title
+    const titles = {
+        'project_zomboid': 'Project Zomboid Server Management',
+        'satisfactory': 'Satisfactory Server Management',
+        'palworld': 'PalWorld Server Management'
+    };
+    document.querySelector('.game-title').textContent = titles[game];
 
-    // 如果切换到Project Zomboid，加载配置
-    if (gameName === 'project_zomboid') {
-        loadConfig('project_zomboid', 'server');
-        loadConfig('project_zomboid', 'sandbox');
+    // Update UI elements
+    const forceRestartBtn = document.getElementById('force-restart-btn');
+    const configEditors = document.getElementById('config-editors');
+    
+    if (game === 'project_zomboid') {
+        forceRestartBtn.style.display = '';
+        configEditors.style.display = '';
+        loadConfig(game, 'server');
+        loadConfig(game, 'sandbox');
+    } else {
+        forceRestartBtn.style.display = 'none';
+        configEditors.style.display = 'none';
+    }
+
+    // Clear command output
+    clearOutput();
+}
+
+// Command output handling
+function getOutputPre() {
+    return document.querySelector('.bg-gray-900 pre');
+}
+
+function appendOutput(text) {
+    const outputPre = getOutputPre();
+    if (outputPre) {
+        outputPre.textContent += text;
+        outputPre.scrollTop = outputPre.scrollHeight;
     }
 }
 
-// 显示提示消息
+function clearOutput() {
+    const outputPre = getOutputPre();
+    if (outputPre) {
+        outputPre.textContent = '';
+    }
+}
+
+// Show toast message
 function showToast(message, duration = 3000) {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
@@ -61,25 +117,67 @@ function showToast(message, duration = 3000) {
     }, duration);
 }
 
-// 重启服务器
+// Restart server
 async function restartServer(serverType, forceDelete = false) {
     try {
+        if (currentController) {
+            currentController.abort();
+        }
+
+        currentController = new AbortController();
+        
         const endpoint = serverType === 'project_zomboid' 
             ? `/project_zomboid/restart${forceDelete ? '?force_delete_saves=true' : ''}`
             : `/${serverType}/restart`;
             
+        clearOutput();
+        appendOutput(`Restarting ${serverType} server...\n`);
+
         const response = await fetch(endpoint, {
-            method: 'POST'
+            method: 'POST',
+            signal: currentController.signal
         });
-        
-        const data = await response.json();
-        showToast(`${serverType} 服务器重启${response.ok ? '成功' : '失败'}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+
+        try {
+            while (true) {
+                const {value, done} = await reader.read();
+                if (done) break;
+                
+                let text;
+                try {
+                    text = decoder.decode(value, {stream: true});
+                } catch (e) {
+                    // If UTF-8 decoding fails, try using GBK
+                    const gbkDecoder = new TextDecoder('gbk');
+                    text = gbkDecoder.decode(value);
+                }
+                appendOutput(text);
+            }
+        } catch (error) {
+            appendOutput(`\nDecoding error: ${error.message}\n`);
+        }
+
+        showToast(`${serverType} server restart completed`);
     } catch (error) {
-        showToast(`重启失败: ${error.message}`, 5000);
+        if (error.name === 'AbortError') {
+            appendOutput('\nOperation cancelled\n');
+        } else {
+            appendOutput(`\nError: ${error.message}\n`);
+            showToast(`Restart failed: ${error.message}`, 5000);
+        }
+    } finally {
+        currentController = null;
     }
 }
 
-// 加载配置
+// Load configuration
 async function loadConfig(serverType, configType) {
     try {
         let endpoint = '';
@@ -98,16 +196,16 @@ async function loadConfig(serverType, configType) {
             } else {
                 sandboxConfigEditor.setValue(data.content);
             }
-            showToast('配置加载成功');
+            showToast('Configuration loaded successfully');
         } else {
-            showToast('获取配置文件失败', 5000);
+            showToast('Failed to load configuration file', 5000);
         }
     } catch (error) {
-        showToast(`加载失败: ${error.message}`, 5000);
+        showToast(`Load failed: ${error.message}`, 5000);
     }
 }
 
-// 保存配置
+// Save configuration
 async function saveConfig(serverType, configType) {
     try {
         let endpoint = '';
@@ -130,72 +228,8 @@ async function saveConfig(serverType, configType) {
         });
         
         const data = await response.json();
-        showToast(`配置${response.ok ? '保存成功' : '保存失败'}`);
+        showToast(`Configuration ${response.ok ? 'saved successfully' : 'save failed'}`);
     } catch (error) {
-        showToast(`保存失败: ${error.message}`, 5000);
+        showToast(`Save failed: ${error.message}`, 5000);
     }
 }
-
-// 获取配置文件
-async function getConfig(serverType, configType) {
-    try {
-        let endpoint = '';
-        if (serverType === 'project_zomboid') {
-            endpoint = configType === 'server' 
-                ? '/project_zomboid/get_server_config'
-                : '/project_zomboid/get_sandbox_config';
-        }
-            
-        const response = await fetch(endpoint);
-        
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = configType === 'server' ? 'server-config.ini' : 'sandbox-config.ini';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            showToast('配置文件下载成功');
-        } else {
-            showToast('获取配置文件失败', 5000);
-        }
-    } catch (error) {
-        showToast(`获取配置失败: ${error.message}`, 5000);
-    }
-}
-
-// 上传配置文件
-async function uploadConfig(serverType, configType, file) {
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('config', file);
-
-    try {
-        let endpoint = '';
-        if (serverType === 'project_zomboid') {
-            endpoint = configType === 'server'
-                ? '/project_zomboid/override_server_config'
-                : '/project_zomboid/override_sandbox_config';
-        }
-            
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        showToast(`配置文件上传${response.ok ? '成功' : '失败'}`);
-    } catch (error) {
-        showToast(`上传失败: ${error.message}`, 5000);
-    }
-}
-
-// 初始加载配置
-document.addEventListener('DOMContentLoaded', () => {
-    loadConfig('project_zomboid', 'server');
-    loadConfig('project_zomboid', 'sandbox');
-});
