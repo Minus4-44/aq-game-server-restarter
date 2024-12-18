@@ -1,0 +1,66 @@
+.btn-primary {
+    @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors w-full flex items-center justify-center;
+}
+
+.btn-secondary {
+    @apply bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors flex-1 flex items-center justify-center;
+}
+
+.btn-danger {
+    @apply bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors w-full flex items-center justify-center;
+}
+
+.btn-upload {
+    @apply bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors flex items-center justify-center;
+}
+
+.game-selector-btn {
+    @apply px-6 py-3 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors flex items-center;
+}
+
+.game-selector-btn.active {
+    @apply bg-blue-500 text-white hover:bg-blue-600;
+}
+
+.game-panel {
+    @apply hidden;
+}
+
+.game-panel.active {
+    @apply block;
+}
+
+.config-section {
+    @apply bg-gray-50 p-4 rounded-lg;
+}
+
+/* Toast animation */
+@keyframes slideIn {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+#toast {
+    animation: slideIn 0.3s ease-out;
+}
+
+#toast.hiding {
+    animation: slideOut 0.3s ease-in forwards;
+}

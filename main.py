@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*
+# -*- coding:utf-8 -*-
 """
 Description:
     Our game server management web api
@@ -10,20 +10,24 @@ History:
 import subprocess
 from pathlib import Path
 
-from classy_config import register_config
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from starlette.responses import FileResponse
 
 from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
 from config.satisfactory.satisfactory_config import SatisfactoryConfig
 
 app = FastAPI()
-register_config(filepath="./config/common_config.toml", prefix="common")
+
+# 添加静态文件支持
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/")
-async def read_root():
-    return {"Hello": "World"}
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/project_zomboid/restart", tags=["project_zomboid"])
