@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Server Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white flex flex-col">
+            <div class="p-4">
+                <h1 class="text-xl font-bold">Game Server Management</h1>
+            </div>
+            <nav class="flex-1">
+                <a href="/project_zomboid" class="flex items-center px-4 py-3 hover:bg-gray-700 transition-colors" data-game="project_zomboid">
+                    <i class="fas fa-skull-crossbones w-6"></i>
+                    <span>Project Zomboid</span>
+                </a>
+                <a href="/satisfactory" class="flex items-center px-4 py-3 hover:bg-gray-700 transition-colors" data-game="satisfactory">
+                    <i class="fas fa-industry w-6"></i>
+                    <span>Satisfactory</span>
+                </a>
+                <a href="/palworld" class="flex items-center px-4 py-3 hover:bg-gray-700 transition-colors" data-game="palworld">
+                    <i class="fas fa-dragon w-6"></i>
+                    <span>PalWorld</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm">
+                <div class="px-6 py-4">
+                    <h2 class="text-2xl font-semibold game-title">Project Zomboid Server Management</h2>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="flex-1 overflow-auto p-6">
+                <div class="max-w-6xl mx-auto space-y-6">
+                    <!-- Action Buttons -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex space-x-4">
+                            <button onclick="restartServer(currentGame)" class="btn-primary">
+                                <i class="fas fa-sync-alt mr-2"></i>Restart Server
+                            </button>
+                            <button onclick="restartServer(currentGame, true)" class="btn-danger" id="force-restart-btn" style="display: none;">
+                                <i class="fas fa-trash-alt mr-2"></i>Force Restart and Delete Saves
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Command Output -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h3 class="text-lg font-medium mb-3">Command Output</h3>
+                        <div class="bg-gray-900 text-gray-100 p-4 rounded-lg h-64 overflow-auto">
+                            <pre class="whitespace-pre-wrap font-mono text-sm"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Editors -->
+                    <div id="config-editors" class="grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
+                        <!-- Server Configuration Editor -->
+                        <div class="bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-medium">Server Configuration</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="loadConfig(currentGame, 'server')" class="btn-icon" title="Refresh">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button onclick="saveConfig(currentGame, 'server')" class="btn-icon" title="Save">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="editor-container">
+                                <textarea id="server-config-editor"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Sandbox Configuration Editor -->
+                        <div class="bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-medium">Sandbox Configuration</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="loadConfig(currentGame, 'sandbox')" class="btn-icon" title="Refresh">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button onclick="saveConfig(currentGame, 'sandbox')" class="btn-icon" title="Save">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="editor-container">
+                                <textarea id="sandbox-config-editor"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 hidden">
+        <div class="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg">
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/properties/properties.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/lua/lua.min.js"></script>
+    <script src="/static/main.js"></script>
+</body>
+</html>

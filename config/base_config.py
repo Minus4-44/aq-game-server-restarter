@@ -1,11 +1,11 @@
-# -*- coding:utf-8 -*
+# -*- coding:utf-8 -*-
 """
 Description:
-    Base Game Server Config
+    Base Game Server Configuration
 Author:
     Fumeze(dev.fumeze@outlook.com)
 History:
-    2024/12/2, create file.
+    2024/12/2, created file.
 """
 import os
 import re
@@ -31,7 +31,7 @@ def expand_env_variables(path: str):
 class GameServerConfig:
     def __init__(self, game_name: str, game_server_path: str):
         """
-        Base Game Server Config
+        Base Game Server Configuration
         :param game_name: The name of the game
         :param game_server_path: The path of the game server
         """
@@ -43,7 +43,7 @@ class GameServerConfig:
 class SteamGameServerConfig(GameServerConfig):
     def __init__(self, game_name: str, game_server_path: str):
         """
-        Steam Game Server Config
+        Steam Game Server Configuration
         :param game_name: The name of the game
         :param game_server_path: The path of the game server
         """
