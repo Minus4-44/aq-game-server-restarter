@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 
 from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
 from config.satisfactory.satisfactory_config import SatisfactoryConfig
+from config.palworld.palworld_config import PalWorldConfig
 
 app = FastAPI()
 
@@ -240,3 +241,68 @@ async def restart_satisfactory_server():
             return JSONResponse({"status": "fail", "message": f"Error executing script: {str(e)}"})
     else:
         return JSONResponse({"status": "fail", "message": "Restart script not found"})
+
+
+@app.post("/palworld/restart", tags=["palworld"])
+async def restart_palworld_server():
+    """
+    Restart PalWorld server
+    :return: Streaming response with command output
+    """
+    try:
+        config = PalWorldConfig()
+        process = await asyncio.create_subprocess_shell(
+            f"powershell -ExecutionPolicy Bypass -File {config.restart_server_script_path}",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return StreamingResponse(
+            stream_command_output(process),
+            media_type="text/event-stream"
+        )
+    except Exception as e:
+        return JSONResponse(
+            {"status": "fail", "message": f"Failed to restart PalWorld server: {str(e)}"}
+        )
+
+
+@app.get("/palworld/config", tags=["palworld"])
+async def get_palworld_config():
+    """
+    Get PalWorld server configuration
+    :return: Server configuration content
+    """
+    try:
+        config = PalWorldConfig()
+        config_path = config.get_server_ini_config_path()
+        if not Path(config_path).exists():
+            return JSONResponse(
+                {"status": "fail", "message": "Configuration file not found"}
+            )
+        return FileResponse(config_path)
+    except Exception as e:
+        return JSONResponse(
+            {"status": "fail", "message": f"Failed to get PalWorld configuration: {str(e)}"}
+        )
+
+
+@app.post("/palworld/config", tags=["palworld"])
+async def override_palworld_config(file: UploadFile):
+    """
+    Override PalWorld server configuration
+    :param file: New configuration file
+    :return: Status of the operation
+    """
+    try:
+        config = PalWorldConfig()
+        config_path = config.get_server_ini_config_path()
+        
+        content = await file.read()
+        with open(config_path, "wb") as f:
+            f.write(content)
+            
+        return JSONResponse({"status": "success", "message": "Configuration updated successfully"})
+    except Exception as e:
+        return JSONResponse(
+            {"status": "fail", "message": f"Failed to update PalWorld configuration: {str(e)}"}
+        )

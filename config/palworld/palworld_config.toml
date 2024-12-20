@@ -1,0 +1,8 @@
+# palworld_config.toml
+server_path = "$env:USERPROFILE/scoop/apps/steamcmd/current/steamapps/common/PalServer"
+
+server_config_path = "$env:USERPROFILE/scoop/apps/steamcmd/current/steamapps/common/PalServer/Pal/Saved/Config/WindowsServer"
+
+server_save_path = "$env:USERPROFILE/scoop/apps/steamcmd/current/steamapps/common/PalServer/Pal/Saved/SaveGames"
+
+restart_server_script_path = "./config/palworld/restart_script.ps1"
