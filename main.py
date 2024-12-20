@@ -11,15 +11,21 @@ import subprocess
 from pathlib import Path
 import asyncio
 from typing import AsyncGenerator
+import sys
 
 from fastapi import FastAPI, UploadFile, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from config.project_zomboid.project_zomboid_config import ProjectZomboidConfig
 from config.satisfactory.satisfactory_config import SatisfactoryConfig
 from config.palworld.palworld_config import PalWorldConfig
+
+if sys.platform == "win32":
+    import asyncio
+
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 app = FastAPI()
 
@@ -60,10 +66,10 @@ async def stream_command_output(process) -> AsyncGenerator[str, None]:
             if not line:
                 break
             try:
-                yield line.decode('utf-8')
+                yield line.decode("utf-8")
             except UnicodeDecodeError:
                 try:
-                    yield line.decode('gbk')
+                    yield line.decode("gbk")
                 except UnicodeDecodeError:
                     yield f"[Decode Error] {line}\n"
     except Exception as e:
@@ -85,28 +91,56 @@ async def restart_project_zomboid_server(force_delete_saves: bool = False):
     :param force_delete_saves: Whether to force delete saves before restart
     :return: Streaming response with command output
     """
-    project_zomboid_config = ProjectZomboidConfig()
-    if Path(project_zomboid_config.restart_server_script_path).is_file():
-        paths_args = f"-ZomboidSavePath {project_zomboid_config.game_server_save_path} -SteamCmdPath {project_zomboid_config.steamcmd_path} -ServerStartPath {project_zomboid_config.game_server_path}"
-        cmd = ["pwsh.exe", "-File", project_zomboid_config.restart_server_script_path]
-        if force_delete_saves:
-            cmd.append("-ForceDeleteSaves " + paths_args)
+    try:
+        project_zomboid_config = ProjectZomboidConfig()
+        if Path(project_zomboid_config.restart_server_script_path).is_file():
+            print(
+                f"Executing script: {project_zomboid_config.restart_server_script_path}"
+            )
+
+            async def run_command():
+                cmd = [
+                    "powershell.exe",
+                    "-File",
+                    project_zomboid_config.restart_server_script_path,
+                ]
+                if force_delete_saves:
+                    cmd.append("-ForceDeleteSaves")
+
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    universal_newlines=False,
+                    bufsize=1,
+                )
+
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    try:
+                        yield line.decode("utf-8")
+                    except UnicodeDecodeError:
+                        try:
+                            yield line.decode("gbk")
+                        except UnicodeDecodeError:
+                            yield f"[Decode Error] {line}\n"
+
+                process.wait()
+
+            return StreamingResponse(run_command(), media_type="text/plain")
         else:
-            cmd.append(paths_args)
+            error_msg = f"Restart script not found at: {project_zomboid_config.restart_server_script_path}"
+            print(error_msg)
+            return JSONResponse({"status": "fail", "message": error_msg})
+    except Exception as e:
+        import traceback
 
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NO_WINDOW
-        )
-
-        return StreamingResponse(
-            stream_command_output(process),
-            media_type='text/plain'
-        )
-    else:
-        return JSONResponse({"status": "fail", "message": "Restart script not found"})
+        error_msg = f"Failed to restart Project Zomboid server: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        return JSONResponse({"status": "fail", "message": error_msg})
 
 
 @app.get("/project_zomboid/get_server_config", tags=["project_zomboid"])
@@ -121,15 +155,17 @@ async def get_server_config(server_name: str = ""):
     if Path(config_path).is_file():
         try:
             # Try UTF-8 first
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 content = f.read()
         except UnicodeDecodeError:
             # If failed, try GBK
-            with open(config_path, 'r', encoding='gbk') as f:
+            with open(config_path, "r", encoding="gbk") as f:
                 content = f.read()
         return JSONResponse({"content": content})
     else:
-        return JSONResponse({"status": "fail", "message": "Server config file not found"})
+        return JSONResponse(
+            {"status": "fail", "message": "Server config file not found"}
+        )
 
 
 @app.get("/project_zomboid/get_sandbox_config", tags=["project_zomboid"])
@@ -144,15 +180,17 @@ async def get_sandbox_config(server_name: str = ""):
     if Path(config_path).is_file():
         try:
             # Try UTF-8 first
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 content = f.read()
         except UnicodeDecodeError:
             # If failed, try GBK
-            with open(config_path, 'r', encoding='gbk') as f:
+            with open(config_path, "r", encoding="gbk") as f:
                 content = f.read()
         return JSONResponse({"content": content})
     else:
-        return JSONResponse({"status": "fail", "message": "Sandbox config file not found"})
+        return JSONResponse(
+            {"status": "fail", "message": "Sandbox config file not found"}
+        )
 
 
 @app.post("/project_zomboid/override_server_config", tags=["project_zomboid"])
@@ -170,12 +208,12 @@ async def override_server_config(content: dict, server_name: str = ""):
     try:
         try:
             # Try UTF-8 first
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 f.read()
-            encoding = 'utf-8'
+            encoding = "utf-8"
         except UnicodeDecodeError:
-            encoding = 'gbk'
-        
+            encoding = "gbk"
+
         with open(config_path, "w", encoding=encoding) as f:
             f.write(content["content"])
         return JSONResponse({"status": "success"})
@@ -198,12 +236,12 @@ async def override_sandbox_config(content: dict, server_name: str = ""):
     try:
         try:
             # Try UTF-8 first
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 f.read()
-            encoding = 'utf-8'
+            encoding = "utf-8"
         except UnicodeDecodeError:
-            encoding = 'gbk'
-        
+            encoding = "gbk"
+
         with open(config_path, "w", encoding=encoding) as f:
             f.write(content["content"])
         return JSONResponse({"status": "success"})
@@ -217,30 +255,52 @@ async def restart_satisfactory_server():
     Restart Satisfactory server
     :return: Streaming response with command output
     """
-    satisfactory_config = SatisfactoryConfig()
-    if Path(satisfactory_config.restart_server_script_path).is_file():
-        try:
-            cmd = [
-                "pwsh.exe",
-                "-File",
-                satisfactory_config.restart_server_script_path,
-            ]
-            
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
+    try:
+        satisfactory_config = SatisfactoryConfig()
+        if Path(satisfactory_config.restart_server_script_path).is_file():
+            print(f"Executing script: {satisfactory_config.restart_server_script_path}")
 
-            return StreamingResponse(
-                stream_command_output(process),
-                media_type='text/plain'
-            )
-        except Exception as e:
-            return JSONResponse({"status": "fail", "message": f"Error executing script: {str(e)}"})
-    else:
-        return JSONResponse({"status": "fail", "message": "Restart script not found"})
+            async def run_command():
+                process = subprocess.Popen(
+                    [
+                        "powershell.exe",
+                        "-File",
+                        satisfactory_config.restart_server_script_path,
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    universal_newlines=False,
+                    bufsize=1,
+                )
+
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    try:
+                        yield line.decode("utf-8")
+                    except UnicodeDecodeError:
+                        try:
+                            yield line.decode("gbk")
+                        except UnicodeDecodeError:
+                            yield f"[Decode Error] {line}\n"
+
+                process.wait()
+
+            return StreamingResponse(run_command(), media_type="text/plain")
+        else:
+            error_msg = f"Restart script not found at: {satisfactory_config.restart_server_script_path}"
+            print(error_msg)
+            return JSONResponse({"status": "fail", "message": error_msg})
+    except Exception as e:
+        import traceback
+
+        error_msg = (
+            f"Failed to restart Satisfactory server: {str(e)}\n{traceback.format_exc()}"
+        )
+        print(error_msg)
+        return JSONResponse({"status": "fail", "message": error_msg})
 
 
 @app.post("/palworld/restart", tags=["palworld"])
@@ -251,22 +311,51 @@ async def restart_palworld_server():
     """
     try:
         config = PalWorldConfig()
-        process = await asyncio.create_subprocess_shell(
-            f"powershell -ExecutionPolicy Bypass -File {config.restart_server_script_path}",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        return StreamingResponse(
-            stream_command_output(process),
-            media_type="text/event-stream"
-        )
+        if Path(config.restart_server_script_path).is_file():
+            print(f"Executing script: {config.restart_server_script_path}")
+
+            async def run_command():
+                process = subprocess.Popen(
+                    ["powershell.exe", "-File", config.restart_server_script_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    universal_newlines=False,
+                    bufsize=1,
+                )
+
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    try:
+                        yield line.decode("utf-8")
+                    except UnicodeDecodeError:
+                        try:
+                            yield line.decode("gbk")
+                        except UnicodeDecodeError:
+                            yield f"[Decode Error] {line}\n"
+
+                process.wait()
+
+            return StreamingResponse(run_command(), media_type="text/plain")
+        else:
+            error_msg = (
+                f"Restart script not found at: {config.restart_server_script_path}"
+            )
+            print(error_msg)
+            return JSONResponse({"status": "fail", "message": error_msg})
     except Exception as e:
-        return JSONResponse(
-            {"status": "fail", "message": f"Failed to restart PalWorld server: {str(e)}"}
+        import traceback
+
+        error_msg = (
+            f"Failed to restart PalWorld server: {str(e)}\n{traceback.format_exc()}"
         )
+        print(error_msg)
+        return JSONResponse({"status": "fail", "message": error_msg})
 
 
-@app.get("/palworld/config", tags=["palworld"])
+@app.get("/palworld/get_config", tags=["palworld"])
 async def get_palworld_config():
     """
     Get PalWorld server configuration
@@ -277,16 +366,32 @@ async def get_palworld_config():
         config_path = config.get_server_ini_config_path()
         if not Path(config_path).exists():
             return JSONResponse(
-                {"status": "fail", "message": "Configuration file not found"}
+                {"status": "fail", "message": "Configuration file not found"},
+                media_type="application/json",
             )
-        return FileResponse(config_path)
-    except Exception as e:
+        with open(config_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        response_data = {"status": "success", "content": content}
+
         return JSONResponse(
-            {"status": "fail", "message": f"Failed to get PalWorld configuration: {str(e)}"}
+            content=response_data,
+            media_type="application/json",
+            headers={"Content-Type": "application/json"},
+        )
+    except Exception as e:
+        print("Error reading config:", str(e))
+        return JSONResponse(
+            content={
+                "status": "fail",
+                "message": f"Failed to get PalWorld configuration: {str(e)}",
+            },
+            media_type="application/json",
+            headers={"Content-Type": "application/json"},
         )
 
 
-@app.post("/palworld/config", tags=["palworld"])
+@app.post("/palworld/override_config", tags=["palworld"])
 async def override_palworld_config(file: UploadFile):
     """
     Override PalWorld server configuration
@@ -296,13 +401,18 @@ async def override_palworld_config(file: UploadFile):
     try:
         config = PalWorldConfig()
         config_path = config.get_server_ini_config_path()
-        
+
         content = await file.read()
         with open(config_path, "wb") as f:
             f.write(content)
-            
-        return JSONResponse({"status": "success", "message": "Configuration updated successfully"})
+
+        return JSONResponse(
+            {"status": "success", "message": "Configuration updated successfully"}
+        )
     except Exception as e:
         return JSONResponse(
-            {"status": "fail", "message": f"Failed to update PalWorld configuration: {str(e)}"}
+            {
+                "status": "fail",
+                "message": f"Failed to update PalWorld configuration: {str(e)}",
+            }
         )

@@ -1,30 +1,39 @@
 // Global variables
 let currentGame = 'project_zomboid';
 let currentController = null;
-let serverConfigEditor = null;
-let sandboxConfigEditor = null;
+let projectZomboidServerEditor = null;
+let projectZomboidSandboxEditor = null;
+let palworldConfigEditor = null;
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize editors
-    serverConfigEditor = CodeMirror.fromTextArea(document.getElementById('server-config-editor'), {
+    // Initialize Project Zomboid editors
+    projectZomboidServerEditor = CodeMirror.fromTextArea(document.getElementById('server-config-editor'), {
         mode: 'properties',
         theme: 'monokai',
         lineNumbers: true,
-        autoCloseBrackets: true,
         matchBrackets: true,
         indentUnit: 4,
-        lineWrapping: true,
+        lineWrapping: true
     });
 
-    sandboxConfigEditor = CodeMirror.fromTextArea(document.getElementById('sandbox-config-editor'), {
-        mode: 'lua',
+    projectZomboidSandboxEditor = CodeMirror.fromTextArea(document.getElementById('sandbox-config-editor'), {
+        mode: 'properties',
         theme: 'monokai',
         lineNumbers: true,
-        autoCloseBrackets: true,
         matchBrackets: true,
         indentUnit: 4,
-        lineWrapping: true,
+        lineWrapping: true
+    });
+
+    // Initialize Palworld editor
+    palworldConfigEditor = CodeMirror.fromTextArea(document.getElementById('palworld-config-editor'), {
+        mode: 'properties',
+        theme: 'monokai',
+        lineNumbers: false,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true
     });
 
     // Set initial game
@@ -63,16 +72,27 @@ function setCurrentGame(game) {
 
     // Update UI elements
     const forceRestartBtn = document.getElementById('force-restart-btn');
-    const configEditors = document.getElementById('config-editors');
+    const projectZomboidEditors = document.getElementById('project-zomboid-editors');
+    const palworldEditor = document.getElementById('palworld-editor');
     
+    // Hide all editors first
+    forceRestartBtn.style.display = 'none';
+    if (projectZomboidEditors) projectZomboidEditors.style.display = 'none';
+    if (palworldEditor) palworldEditor.style.display = 'none';
+
+    // Show relevant editors
     if (game === 'project_zomboid') {
-        forceRestartBtn.style.display = '';
-        configEditors.style.display = '';
-        loadConfig(game, 'server');
-        loadConfig(game, 'sandbox');
-    } else {
-        forceRestartBtn.style.display = 'none';
-        configEditors.style.display = 'none';
+        forceRestartBtn.style.display = 'block';
+        if (projectZomboidEditors) {
+            projectZomboidEditors.style.display = 'grid';
+            loadConfig('project_zomboid', 'server');
+            loadConfig('project_zomboid', 'sandbox');
+        }
+    } else if (game === 'palworld') {
+        if (palworldEditor) {
+            palworldEditor.style.display = 'grid';
+            loadPalworldConfig();
+        }
     }
 
     // Clear command output
@@ -177,24 +197,21 @@ async function restartServer(serverType, forceDelete = false) {
     }
 }
 
-// Load configuration
+// Project Zomboid Configuration
 async function loadConfig(serverType, configType) {
     try {
-        let endpoint = '';
-        if (serverType === 'project_zomboid') {
-            endpoint = configType === 'server' 
-                ? '/project_zomboid/get_server_config'
-                : '/project_zomboid/get_sandbox_config';
-        }
+        const endpoint = configType === 'server' 
+            ? '/project_zomboid/get_server_config'
+            : '/project_zomboid/get_sandbox_config';
             
         const response = await fetch(endpoint);
         const data = await response.json();
         
         if (response.ok && data.content) {
             if (configType === 'server') {
-                serverConfigEditor.setValue(data.content);
+                projectZomboidServerEditor.setValue(data.content);
             } else {
-                sandboxConfigEditor.setValue(data.content);
+                projectZomboidSandboxEditor.setValue(data.content);
             }
             showToast('Configuration loaded successfully');
         } else {
@@ -205,19 +222,15 @@ async function loadConfig(serverType, configType) {
     }
 }
 
-// Save configuration
 async function saveConfig(serverType, configType) {
     try {
-        let endpoint = '';
-        if (serverType === 'project_zomboid') {
-            endpoint = configType === 'server'
-                ? '/project_zomboid/override_server_config'
-                : '/project_zomboid/override_sandbox_config';
-        }
+        const endpoint = configType === 'server'
+            ? '/project_zomboid/override_server_config'
+            : '/project_zomboid/override_sandbox_config';
 
         const content = configType === 'server' 
-            ? serverConfigEditor.getValue()
-            : sandboxConfigEditor.getValue();
+            ? projectZomboidServerEditor.getValue()
+            : projectZomboidSandboxEditor.getValue();
             
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -229,6 +242,62 @@ async function saveConfig(serverType, configType) {
         
         const data = await response.json();
         showToast(`Configuration ${response.ok ? 'saved successfully' : 'save failed'}`);
+    } catch (error) {
+        showToast(`Save failed: ${error.message}`, 5000);
+    }
+}
+
+// Palworld Configuration
+async function loadPalworldConfig() {
+    try {
+        console.log('Fetching Palworld config...');
+        const response = await fetch('/palworld/get_config', {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        console.log('Response received:', response);
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+        
+        // Try to parse the response as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            // If parsing fails, wrap the raw text in a JSON structure
+            data = {
+                status: 'success',
+                content: responseText
+            };
+        }
+        
+        if (data.status === 'success') {
+            palworldConfigEditor.setValue(data.content);
+            showToast('Configuration loaded successfully');
+        } else {
+            showToast(data.message || 'Failed to load configuration file', 5000);
+        }
+    } catch (error) {
+        console.error('Load error:', error);
+        showToast(`Load failed: ${error.message}`, 5000);
+    }
+}
+
+async function savePalworldConfig() {
+    try {
+        const content = palworldConfigEditor.getValue();
+        const blob = new Blob([content], { type: 'text/plain' });
+        const formData = new FormData();
+        formData.append('file', blob, 'PalWorldSettings.ini');
+        
+        const response = await fetch('/palworld/override_config', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        showToast(data.message || (response.ok ? 'Configuration saved successfully' : 'Save failed'));
     } catch (error) {
         showToast(`Save failed: ${error.message}`, 5000);
     }

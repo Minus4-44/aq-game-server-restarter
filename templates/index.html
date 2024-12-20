@@ -9,6 +9,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .btn-primary {
+            @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors;
+        }
+        .btn-danger {
+            @apply bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors;
+        }
+        .btn-icon {
+            @apply text-gray-600 hover:text-gray-800 transition-colors;
+        }
+        #toast {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #toast.hiding {
+            opacity: 0;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <div class="flex h-screen">
@@ -66,16 +83,16 @@
                     </div>
 
                     <!-- Configuration Editors -->
-                    <div id="config-editors" class="grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
+                    <div id="project-zomboid-editors" class="grid grid-cols-1 md:grid-cols-2 gap-6" style="display: none;">
                         <!-- Server Configuration Editor -->
                         <div class="bg-white rounded-lg shadow-sm p-6">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-lg font-medium">Server Configuration</h3>
                                 <div class="flex space-x-2">
-                                    <button onclick="loadConfig(currentGame, 'server')" class="btn-icon" title="Refresh">
+                                    <button onclick="loadConfig('project_zomboid', 'server')" class="btn-icon" title="Refresh">
                                         <i class="fas fa-sync-alt"></i>
                                     </button>
-                                    <button onclick="saveConfig(currentGame, 'server')" class="btn-icon" title="Save">
+                                    <button onclick="saveConfig('project_zomboid', 'server')" class="btn-icon" title="Save">
                                         <i class="fas fa-save"></i>
                                     </button>
                                 </div>
@@ -90,16 +107,36 @@
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-lg font-medium">Sandbox Configuration</h3>
                                 <div class="flex space-x-2">
-                                    <button onclick="loadConfig(currentGame, 'sandbox')" class="btn-icon" title="Refresh">
+                                    <button onclick="loadConfig('project_zomboid', 'sandbox')" class="btn-icon" title="Refresh">
                                         <i class="fas fa-sync-alt"></i>
                                     </button>
-                                    <button onclick="saveConfig(currentGame, 'sandbox')" class="btn-icon" title="Save">
+                                    <button onclick="saveConfig('project_zomboid', 'sandbox')" class="btn-icon" title="Save">
                                         <i class="fas fa-save"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="editor-container">
                                 <textarea id="sandbox-config-editor"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Palworld Editor -->
+                    <div id="palworld-editor" class="grid grid-cols-1 gap-6" style="display: none;">
+                        <div class="bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-medium">Server Configuration</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="loadPalworldConfig()" class="btn-icon" title="Refresh">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                    <button onclick="savePalworldConfig()" class="btn-icon" title="Save">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="editor-container">
+                                <textarea id="palworld-config-editor"></textarea>
                             </div>
                         </div>
                     </div>
